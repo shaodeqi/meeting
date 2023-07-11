@@ -1,0 +1,116 @@
+.relative {
+    position: relative;
+}
+
+.cursor-pointer {
+    cursor: pointer;
+}
+
+.user-select-none {
+    user-select: none;
+}
+
+.overflow-visible {
+    overflow: visible;
+}
+
+.overflow-hidden {
+    overflow: hidden;
+}
+
+.flex {
+    display: flex;
+}
+
+.flex-sc {
+    .flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.flex-1 {
+    flex: 1;
+}
+
+.loop(@i) when (@i >=0) {
+    .p-@{i} {
+        padding: unit(@i, px);
+    }
+
+    .pl-@{i} {
+        padding-left: unit(@i, px);
+    }
+
+    .pr-@{i} {
+        padding-right: unit(@i, px);
+    }
+
+    .px-@{i} {
+        padding-left: unit(@i, px);
+        padding-right: unit(@i, px);
+    }
+
+    .py-@{i} {
+        padding-top: unit(@i, px);
+        padding-bottom: unit(@i, px);
+    }
+
+    .m-@{i} {
+        margin: unit(@i, px);
+    }
+
+    .mx-@{i} {
+        margin-left: unit(@i, px);
+        margin-right: unit(@i, px);
+    }
+
+    .my-@{i} {
+        margin-top: unit(@i, px);
+        margin-bottom: unit(@i, px);
+    }
+
+    .ml-@{i} {
+        margin-left: unit(@i, px);
+    }
+
+    .mr-@{i} {
+        margin-right: unit(@i, px);
+    }
+
+    .h-@{i} {
+        height: unit(@i, px);
+    }
+
+    .w-@{i} {
+        width: unit(@i, px);
+    }
+
+
+    .loop(@i - 4);
+}
+
+.loop(32);
+
+.f-12 {
+    font-size: 12px;
+}
+
+.f-14 {
+    font-size: 14px;
+}
+
+.f-16 {
+    font-size: 16px;
+}
+
+.rotate180 {
+    transform: rotate(180deg);
+}
+
+.clickable {
+    .cursor-pointer;
+
+    &:hover {
+        opacity: 0.8;
+    }
+}
