@@ -1,7 +1,4 @@
 export const initViewport = () => {
-  const originHeight = globalThis.innerHeight;
-  console.log('originHeight', originHeight);
-
   const handler = () => {
     document.documentElement.style.height = `${globalThis.visualViewport.height}px`;
     document.documentElement.scrollTop = 0;
