@@ -5,10 +5,30 @@ import { type } from '@/utils';
 
 let socket = inject('socket');
 let user = inject('user');
+let room = inject('room');
 
 const users = ref([]);
 const messageContainer = ref(null);
 let hasHistory = false;
+
+const notify = (title, body) => {
+  if (!('Notification' in globalThis)) {
+    return;
+  }
+
+  if (Notification.permission === 'granted') {
+    new Notification(title, { body });
+  } else if (Notification.permission !== 'denied') {
+    Notification.requestPermission().then((permission) => {
+      if (permission === 'granted') {
+        new Notification(title, { body });
+      }
+    });
+  }
+
+  // At last, if the user has denied notifications, and you
+  // want to be respectful there is no need to bother them anymore.
+};
 
 watch(socket, (socket) => {
   if (!socket) {
@@ -32,16 +52,16 @@ watch(socket, (socket) => {
         post('users');
         dialogs.value.push(payload);
         break;
+
       case 'send':
         if (payload.data.type) {
-          switch(payload.data.type) {
-
+          switch (payload.data.type) {
             // 需要消息历史
             case 'pull-history':
               post('send', {
                 type: 'push-history',
                 history: dialogs.value,
-              })
+              });
               break;
 
             // 更新消息历史(仅获取一次)
@@ -55,12 +75,14 @@ watch(socket, (socket) => {
 
           break;
         }
+
+        // 消息提醒
+        if (payload.user !== user.value) {
+          notify(room, payload.data);
+        }
         dialogs.value.push(payload);
         break;
       case 'users':
-        users.value = payload.data;
-        break;
-      case 'history':
         users.value = payload.data;
         break;
     }
@@ -72,11 +94,11 @@ watch(socket, (socket) => {
   };
 
   // 请求历史消息
-  socket.onopen= () => {
+  socket.onopen = () => {
     post('send', {
-      type: 'pull-history'
-    })
-  }
+      type: 'pull-history',
+    });
+  };
 });
 
 const post = (cmd, data, users) => {
@@ -180,7 +202,7 @@ const dialogs = ref([]);
       </div> -->
       <textarea
         v-model="message"
-        placeholder="something"
+        placeholder="请输入..."
         class="chat-input flex-1"
         @keydown.enter="handleEnter"
       ></textarea>
@@ -193,6 +215,11 @@ const dialogs = ref([]);
 .chat-input-pane {
   display: flex;
   flex-direction: column;
+}
+
+.chat-dialogs-container,
+.chat-input {
+  min-width: 120px;
 }
 
 .chat-dialogs-container {
@@ -220,7 +247,7 @@ const dialogs = ref([]);
       }
       .dialog-message {
         display: flex;
-        white-space: pre;
+        white-space: break-spaces;
       }
       &.self {
         .dialog-user {

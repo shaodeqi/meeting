@@ -14,6 +14,10 @@ const mode = searchParams.get('mode');
 const chatSize = ref(20);
 let socket = ref();
 let user = ref(randomString(8));
+let currentHash = hash;
+if (location.host === '127.0.0.1:5173') {
+  currentHash = '10f3b500f2a4df8a0278c85954be9fcc';
+}
 
 switch (mode) {
   case 'chat':
@@ -44,7 +48,7 @@ const handleResize = (delay = 0) => {
   setTimeout(() => {
     let panes = document.querySelectorAll('.pane-container');
     panes.forEach((pane) => {
-      if (pane.offsetWidth <= 100) {
+      if (pane.offsetWidth <= 120) {
         pane.classList.add('narrow');
       } else {
         pane.classList.remove('narrow');
@@ -82,7 +86,9 @@ ElMessageBox.prompt('请输入昵称', {
   showCancelButton: false,
   showConfirmButton: false,
   inputValue: localStorage.getItem('meet.user'),
-  customStyle: {transform: 'translate(0, -100%)'}
+  customStyle: { transform: 'translate(0, -100%)' },
+  inputPattern: /^[\u4e00-\u9fa5a-zA-Z0-9_-]{1,30}$/,
+  inputErrorMessage: '昵称校验不通过',
 })
   .then(({ value }) => {
     if (value) {
@@ -92,7 +98,7 @@ ElMessageBox.prompt('请输入昵称', {
   .catch()
   .finally(() => {
     localStorage.setItem('meet.user', user.value);
-    const key = md5(`${hash}@${room}@${user.value}`);
+    const key = md5(`${currentHash}@${room}@${user.value}`);
 
     const wholeWsUrl = `${wsUrl}?room=${room}&user=${user.value}&key=${key}`;
     connect(wholeWsUrl);
