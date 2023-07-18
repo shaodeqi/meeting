@@ -1,5 +1,6 @@
 export const initViewport = () => {
   const originHeight = globalThis.innerHeight;
+  console.log('originHeight', originHeight);
 
   const handler = () => {
     const visualViewportHeight = globalThis.visualViewport.height;
@@ -10,6 +11,7 @@ export const initViewport = () => {
     const noMove = (e) => e.preventDefault();
 
     // 键盘收起
+    console.log('visualViewportHeight', visualViewportHeight);
     if (visualViewportHeight > originHeight) {
       document.documentElement.addEventListener('touchmove', noMove, {
         passive: false,
