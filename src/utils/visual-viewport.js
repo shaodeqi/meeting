@@ -3,27 +3,8 @@ export const initViewport = () => {
   console.log('originHeight', originHeight);
 
   const handler = () => {
-    const visualViewportHeight = globalThis.visualViewport.height;
     document.documentElement.style.height = `${globalThis.visualViewport.height}px`;
     document.documentElement.scrollTop = 0;
-
-    // 禁止滑动
-    const noMove = (e) => e.preventDefault();
-
-    // 键盘收起
-    console.log('visualViewportHeight', visualViewportHeight);
-    if (visualViewportHeight >= originHeight) {
-      document.documentElement.removeEventListener('touchmove', noMove, {
-        passive: false,
-      });
-    }
-
-    // 键盘弹出
-    if (visualViewportHeight < originHeight) {
-      document.documentElement.addEventListener('touchmove', noMove, {
-        passive: false,
-      });
-    }
   };
 
   if (globalThis.visualViewport) {
