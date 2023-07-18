@@ -12,15 +12,15 @@ export const initViewport = () => {
 
     // 键盘收起
     console.log('visualViewportHeight', visualViewportHeight);
-    if (visualViewportHeight > originHeight) {
-      document.documentElement.addEventListener('touchmove', noMove, {
+    if (visualViewportHeight >= originHeight) {
+      document.documentElement.removeEventListener('touchmove', noMove, {
         passive: false,
       });
     }
 
     // 键盘弹出
     if (visualViewportHeight < originHeight) {
-      document.documentElement.removeEventListener('touchmove', noMove, {
+      document.documentElement.addEventListener('touchmove', noMove, {
         passive: false,
       });
     }
