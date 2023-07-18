@@ -1,11 +1,13 @@
 export const initViewport = () => {
   const handler = () => {
     document.documentElement.style.height = `${globalThis.visualViewport.height}px`;
-    document.documentElement.scrollTop = 0;
+    if (document.documentElement.scrollTop > 0) {
+      document.documentElement.scrollTop = 0;
+    }
   };
 
   if (globalThis.visualViewport) {
-    // globalThis.visualViewport.addEventListener('resize', handler);
+    globalThis.visualViewport.addEventListener('resize', handler);
     globalThis.visualViewport.addEventListener('scroll', handler);
   }
 
