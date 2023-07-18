@@ -202,6 +202,7 @@ const dialogs = ref([]);
       </div> -->
       <textarea
         v-model="message"
+        enterkeyhint="send"
         placeholder="请输入..."
         class="chat-input flex-1"
         @keydown.enter="handleEnter"
