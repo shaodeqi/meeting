@@ -1,4 +1,5 @@
 export * from './constants';
+export * from './visual-viewport';
 
 export const type = (content) =>
   Object.prototype.toString.call(content).slice(8, -1);
@@ -8,7 +9,7 @@ export const randomString = (min = 43, max = min) => {
     '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz';
   const charsLength = chars.length;
   let randomCharsLengh = Math.floor(
-    min + Math.random() * (Math.abs(max - min) + 1)
+    min + Math.random() * (Math.abs(max - min) + 1),
   );
 
   let result = '';

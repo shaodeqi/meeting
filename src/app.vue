@@ -1,12 +1,14 @@
 <script setup>
-import { ref, provide } from 'vue';
+import { ref, provide, onUnmounted } from 'vue';
 import { Splitpanes, Pane } from 'splitpanes';
 import md5 from 'blueimp-md5';
 
 import { ElMessageBox, ElNotification } from 'element-plus';
 
-import { wsUrl, hash, randomString } from '@/utils';
+import { wsUrl, hash, randomString, initViewport } from '@/utils';
 import ChatBlock from '@/components/chat-block.vue';
+
+const cancelInitViewPort = initViewport();
 
 const searchParams = new URLSearchParams(location.search);
 const room = searchParams.get('room');
@@ -95,7 +97,7 @@ ElMessageBox.prompt('请输入昵称', {
       user.value = value;
     }
   })
-  .catch()
+  .catch(() => {})
   .finally(() => {
     localStorage.setItem('meet.user', user.value);
     const key = md5(`${currentHash}@${room}@${user.value}`);
@@ -103,6 +105,8 @@ ElMessageBox.prompt('请输入昵称', {
     const wholeWsUrl = `${wsUrl}?room=${room}&user=${user.value}&key=${key}`;
     connect(wholeWsUrl);
   });
+
+onUnmounted(cancelInitViewPort);
 
 // 展示聊天框
 // const showChat = ref(true);
