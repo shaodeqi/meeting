@@ -1,9 +1,44 @@
 <script setup>
-import { ref } from 'vue';
+import { ref, provide } from 'vue';
 import { Splitpanes, Pane } from 'splitpanes';
+import md5 from 'blueimp-md5';
 
-import ChatBlock from './components/chat-block.vue';
-import './assets/chat.svg';
+import { ElMessageBox, ElNotification } from 'element-plus';
+
+import { wsUrl, hash, randomString } from '@/utils';
+import ChatBlock from '@/components/chat-block.vue';
+
+const searchParams = new URLSearchParams(location.search);
+const room = searchParams.get('room');
+const mode = searchParams.get('mode');
+const chatSize = ref(20);
+let socket = ref();
+let user = ref(randomString(8));
+
+switch (mode) {
+  case 'chat':
+    chatSize.value = 100;
+    break;
+  case 'video':
+    chatSize.value = 0;
+    break;
+  default:
+    chatSize.value = 20;
+    break;
+}
+
+if (!room) {
+  ElNotification({
+    title: '错误',
+    message: '未输入房间名，请刷新重试！',
+    type: 'error',
+    duration: 0,
+  });
+}
+
+provide('socket', socket);
+provide('room', room);
+provide('user', user);
 
 const handleResize = (delay = 0) => {
   setTimeout(() => {
@@ -17,12 +52,57 @@ const handleResize = (delay = 0) => {
     });
   }, delay);
 };
+handleResize(1000);
+
+const connect = (url) => {
+  socket.value = new WebSocket(url);
+  socket.value.onclose = (e) => {
+    switch (e.reason) {
+      case 'duplicate':
+        ElNotification({
+          title: '错误',
+          message: '昵称被占用，请刷新重试！',
+          type: 'error',
+          duration: 0,
+        });
+        break;
+      default:
+        ElNotification({
+          title: '错误',
+          message: '连接已断开，请刷新重试！',
+          type: 'error',
+          duration: 0,
+        });
+        break;
+    }
+  };
+};
+
+ElMessageBox.prompt('请输入昵称', {
+  showCancelButton: false,
+  showConfirmButton: false,
+  inputValue: localStorage.getItem('meet.user'),
+  customStyle: {transform: 'translate(0, -100%)'}
+})
+  .then(({ value }) => {
+    if (value) {
+      user.value = value;
+    }
+  })
+  .catch()
+  .finally(() => {
+    localStorage.setItem('meet.user', user.value);
+    const key = md5(`${hash}@${room}@${user.value}`);
+
+    const wholeWsUrl = `${wsUrl}?room=${room}&user=${user.value}&key=${key}`;
+    connect(wholeWsUrl);
+  });
 
 // 展示聊天框
-const showChat = ref(true);
-const handleFolded = () => {
-  showChat.value = !showChat.value;
-};
+// const showChat = ref(true);
+// const handleFolded = () => {
+//   showChat.value = !showChat.value;
+// };
 </script>
 
 <template>
@@ -33,7 +113,7 @@ const handleFolded = () => {
     @resize="handleResize"
     @resized="handleResize(300)"
   >
-    <Pane class="pane-container">
+    <Pane class="pane-container" :size="100 - chatSize">
       <div class="pane-header">
         <svg
           class="pane-icon py-4 px-8"
@@ -41,37 +121,17 @@ const handleFolded = () => {
           height="16"
           viewBox="0 0 16 16"
           fill="currentColor"
-          @dblclick="alert(1)"
         >
           <path
             d="M1.5 2C1.10218 2 0.720644 2.15804 0.43934 2.43934C0.158035 2.72064 0 3.10218 0 3.5L0 12.5C0 12.8978 0.158035 13.2794 0.43934 13.5607C0.720644 13.842 1.10218 14 1.5 14H14.5C14.8978 14 15.2794 13.842 15.5607 13.5607C15.842 13.2794 16 12.8978 16 12.5V3.5C16 3.10218 15.842 2.72064 15.5607 2.43934C15.2794 2.15804 14.8978 2 14.5 2H1.5ZM8.5 8H13.5C13.6326 8 13.7598 8.05268 13.8536 8.14645C13.9473 8.24021 14 8.36739 14 8.5V11.5C14 11.6326 13.9473 11.7598 13.8536 11.8536C13.7598 11.9473 13.6326 12 13.5 12H8.5C8.36739 12 8.24021 11.9473 8.14645 11.8536C8.05268 11.7598 8 11.6326 8 11.5V8.5C8 8.36739 8.05268 8.24021 8.14645 8.14645C8.24021 8.05268 8.36739 8 8.5 8Z"
           />
         </svg>
-        <div class="pane-control px-8 f-12">
-          <svg
-            width="16"
-            height="16"
-            fill="currentColor"
-            class="clickable"
-            viewBox="0 0 16 16"
-            :class="{ rotate180: !showChat }"
-            @click="handleFolded"
-          >
-            <path
-              fill-rule="evenodd"
-              d="M6 8a.5.5 0 0 0 .5.5h5.793l-2.147 2.146a.5.5 0 0 0 .708.708l3-3a.5.5 0 0 0 0-.708l-3-3a.5.5 0 0 0-.708.708L12.293 7.5H6.5A.5.5 0 0 0 6 8Zm-2.5 7a.5.5 0 0 1-.5-.5v-13a.5.5 0 0 1 1 0v13a.5.5 0 0 1-.5.5Z"
-            />
-          </svg>
-        </div>
       </div>
-      <div class="pane-content">1</div>
+      <div class="pane-content">
+        【屏幕共享】<span class="text-grey">能力建设中...</span>
+      </div>
     </Pane>
-    <Pane
-      v-if="showChat"
-      class="pane-container"
-      size="20"
-      style="min-width: 400px"
-    >
+    <Pane class="pane-container" :size="chatSize">
       <div class="pane-header">
         <svg
           class="pane-icon py-4 px-8"
@@ -92,7 +152,7 @@ const handleFolded = () => {
 <style scoped lang="less">
 .split-panes {
   width: 100%;
-  height: 100vh;
+  height: 100%;
   .splitpanes__pane {
     display: flex;
     justify-content: center;
@@ -103,7 +163,7 @@ const handleFolded = () => {
     position: relative;
     .pane-header {
       transition: all 0.2s ease-in;
-      background-color: @bg-color-grey;
+      // background-color: @bg-color-grey;
       min-width: 60px;
       display: flex;
       width: 100%;

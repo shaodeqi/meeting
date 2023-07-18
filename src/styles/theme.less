@@ -1,6 +1,6 @@
 .splitpanes {
   .splitpanes__pane {
-    background-color: #1d1e22;
+    background-color: @bg-pane;
   }
 
   .splitpanes__splitter {
@@ -20,17 +20,17 @@
 
   &.splitpanes--vertical>.splitpanes__splitter,
   .splitpanes--vertical>.splitpanes__splitter {
-    width: 18px;
-    background-color: #060606;
-    border: 1px solid #2f2f2f;
+    width: 20px;
+    background-color: @bg-color;
+    border: 1px solid @border-color;
     // border: 1px solid #fff;
   }
 
   &.splitpanes--horizontal>.splitpanes__splitter,
   .splitpanes--horizontal>.splitpanes__splitter {
-    background-color: #060606;
+    background-color: @bg-color;
     height: 2px;
-    border: 1px solid #2f2f2f;
+    border: 1px solid @border-color;
     // border: 1px solid #fff;
   }
 }

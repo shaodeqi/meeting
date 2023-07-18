@@ -12,10 +12,44 @@
   -webkit-text-size-adjust: 100%;
 }
 
+html.dark {
+  /* 自定义深色背景颜色 */
+  --el-bg-color: @bg-color-grey;
+}
+
+#app {
+  height: 100%;
+}
+
+html,
+body {
+  height: 100%;
+}
+
 body {
   margin: 0;
   width: 100%;
-  min-height: 100vh;
-  color: #fff;
-  text-align: center;
+  color: @text-color;
+  font-size: 14px;
+
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: transparent;
+  }
+
+  ::-webkit-scrollbar-track-piece {
+    background-color: transparent;
+  }
+
+  :hover::-webkit-scrollbar-thumb {
+    background-color: @grey-blue-3;
+
+    &:hover {
+      background-color: @grey-blue-2;
+    }
+  }
 }
