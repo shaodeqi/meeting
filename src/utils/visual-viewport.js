@@ -6,7 +6,7 @@ export const initViewport = () => {
 
   if (globalThis.visualViewport) {
     globalThis.visualViewport.addEventListener('resize', handler);
-    globalThis.visualViewport.addEventListener('scroll', handler);
+    // globalThis.visualViewport.addEventListener('scroll', handler);
   }
 
   return () => {
