@@ -30,7 +30,7 @@ watch(socket, (socket) => {
     switch (payload.cmd) {
       case 'connect':
       case 'close':
-        dialogs.value.push(payload);
+        // dialogs.value.push(payload);
         post('users');
         break;
 

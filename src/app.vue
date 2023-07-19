@@ -80,6 +80,7 @@ const resetConnectState = () => {
   console.log(`readyState: ${socket.value?.readyState}`);
   connectState.value = socket.value?.readyState ?? WebSocket.CLOSED;
 };
+
 const connect = () => {
   const key = md5(`${currentHash}@${room}@${user.value}`);
   const wholeWsUrl = `${currentWsOrigin}?room=${room}&user=${user.value}&key=${key}`;
@@ -93,19 +94,13 @@ const connect = () => {
     console.log(
       `socket断开连接: ${code} - ${reason} - ${new Date().toLocaleTimeString()}`
     );
-    resetConnectState();
-    switch (+code) {
-      case 1006:
-        ElNotification({
-          title: '错误',
-          message: '连接断开，请刷新重试！',
-          type: 'error',
-          duration: 0,
-        });
-        break;
-      default:
-        break;
-    }
+    // switch (+code) {
+    //   case 1006:
+    //     // connect();
+    //     break;
+    //   default:
+    //     break;
+    // }
     resetConnectState();
   });
   socket.value.addEventListener('open', () => {
@@ -123,7 +118,7 @@ network(({ type }) => {
 
 ElMessageBox.prompt('请输入昵称', {
   showCancelButton: false,
-  showConfirmButton: false,
+  confirmButtonText: '确定',
   inputValue: localStorage.getItem('meet.user'),
   customStyle: { transform: 'translate(0, -100%)' },
   inputPattern: /^[\u4e00-\u9fa5a-zA-Z0-9_-]{1,30}$/,
