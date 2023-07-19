@@ -90,7 +90,9 @@ const connect = () => {
 
   window.socket = socket.value;
   socket.value.addEventListener('close', ({ code, reason }) => {
-    console.log(`socket断开连接: ${code} - ${reason}`);
+    console.log(
+      `socket断开连接: ${code} - ${reason} - ${new Date().toLocaleTimeString()}`
+    );
     resetConnectState();
     switch (+code) {
       case 1006:
