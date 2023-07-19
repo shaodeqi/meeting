@@ -80,8 +80,8 @@ const connect = () => {
   const key = md5(`${currentHash}@${room}@${user.value}`);
   const wholeWsUrl = `${currentWsOrigin}?room=${room}&user=${user.value}&key=${key}`;
   socket.value?.close();
-  socket.value = new ReconnectingWebSocket(wholeWsUrl, {
-    maxReconnectAttempts: 3,
+  socket.value = new ReconnectingWebSocket(wholeWsUrl, null, {
+    maxReconnectAttempts: 5,
   });
 
   resetConnectState();
