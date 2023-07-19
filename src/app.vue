@@ -100,7 +100,7 @@ network(({ type }) => {
       message: `网络恢复，重新建立连接...`,
       type: 'success',
     });
-    // connect();
+    connect();
   }
 
   if (type === 'offline') {
@@ -109,7 +109,6 @@ network(({ type }) => {
       message: `网络断开`,
       type: 'warning',
     });
-    connect();
   }
 });
 
