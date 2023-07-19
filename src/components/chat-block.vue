@@ -1,7 +1,7 @@
 <script setup>
 import { ref, inject, nextTick, watch } from 'vue';
 import { Splitpanes, Pane } from 'splitpanes';
-import { type, notify } from '@/utils';
+import { type, notify, CLOSE_COOLING_MS } from '@/utils';
 
 let socket = inject('socket');
 let user = inject('user');
@@ -10,6 +10,7 @@ let room = inject('room');
 const users = ref([]);
 const messageContainer = ref(null);
 let hasHistory = false;
+let justClosedUser = '';
 
 watch(socket, (socket) => {
   if (!socket) {
@@ -29,8 +30,21 @@ watch(socket, (socket) => {
     }
     switch (payload.cmd) {
       case 'connect':
+        if (justClosedUser && justClosedUser === payload.user) {
+          dialogs.value.pop();
+        } else {
+          dialogs.value.push(payload);
+        }
+        post('users');
+        break;
+
       case 'close':
-        // dialogs.value.push(payload);
+        justClosedUser = payload.user;
+        setTimeout(() => {
+          justClosedUser = '';
+        }, CLOSE_COOLING_MS);
+
+        dialogs.value.push(payload);
         post('users');
         break;
 
@@ -92,7 +106,7 @@ const post = (cmd, data, users) => {
       users,
       cmd,
       data,
-    })
+    }),
   );
 };
 

@@ -7,5 +7,6 @@ export const NETWORK_STATUS = {
   2: 'offline',
   3: 'offline',
 };
+export const CLOSE_COOLING_MS = 3000;
 
 // export const hash = '10f3b500f2a4df8a0278c85954be9fcc'; // 测试
