@@ -92,7 +92,7 @@ const connect = () => {
   socket.value.addEventListener('close', ({ code, reason }) => {
     console.log(`socket断开连接: ${code} - ${reason}`);
     resetConnectState();
-    switch (code) {
+    switch (+code) {
       case 10006:
         ElNotification({
           title: '错误',

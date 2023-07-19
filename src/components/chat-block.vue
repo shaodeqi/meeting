@@ -76,7 +76,6 @@ watch(socket, (socket) => {
 
   // 请求历史消息
   socket.addEventListener('open', () => {
-    console.log(`建立连接`);
     hasHistory = false;
     post('send', {
       type: 'history.pull',
