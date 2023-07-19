@@ -1,7 +1,7 @@
 <script setup>
 import { ref, inject, nextTick, watch } from 'vue';
 import { Splitpanes, Pane } from 'splitpanes';
-import { type } from '@/utils';
+import { type, notify } from '@/utils';
 
 let socket = inject('socket');
 let user = inject('user');
@@ -10,25 +10,6 @@ let room = inject('room');
 const users = ref([]);
 const messageContainer = ref(null);
 let hasHistory = false;
-
-const notify = (title, body) => {
-  if (!('Notification' in globalThis)) {
-    return;
-  }
-
-  if (Notification.permission === 'granted') {
-    new Notification(title, { body });
-  } else if (Notification.permission !== 'denied') {
-    Notification.requestPermission().then((permission) => {
-      if (permission === 'granted') {
-        new Notification(title, { body });
-      }
-    });
-  }
-
-  // At last, if the user has denied notifications, and you
-  // want to be respectful there is no need to bother them anymore.
-};
 
 watch(socket, (socket) => {
   if (!socket) {
@@ -49,23 +30,23 @@ watch(socket, (socket) => {
     switch (payload.cmd) {
       case 'connect':
       case 'close':
-        post('users');
         dialogs.value.push(payload);
+        post('users');
         break;
 
       case 'send':
         if (payload.data.type) {
           switch (payload.data.type) {
             // 需要消息历史
-            case 'pull-history':
+            case 'history.pull':
               post('send', {
-                type: 'push-history',
+                type: 'history.push',
                 history: dialogs.value,
               });
               break;
 
             // 更新消息历史(仅获取一次)
-            case 'push-history':
+            case 'history.push':
               if (!hasHistory) {
                 dialogs.value = payload.data.history;
               }
@@ -95,8 +76,9 @@ watch(socket, (socket) => {
 
   // 请求历史消息
   socket.onopen = () => {
+    console.log(`建立连接`);
     post('send', {
-      type: 'pull-history',
+      type: 'history.pull',
     });
   };
 });

@@ -5,7 +5,8 @@ import md5 from 'blueimp-md5';
 
 import { ElMessageBox, ElNotification } from 'element-plus';
 
-import { wsUrl, hash, randomString, initViewport } from '@/utils';
+import { WS_ORIGIN, HASH, randomString, initViewport } from '@/utils';
+import network from '@/compositions/network';
 import ChatBlock from '@/components/chat-block.vue';
 
 const cancelInitViewPort = initViewport();
@@ -16,9 +17,11 @@ const mode = searchParams.get('mode');
 const chatSize = ref(20);
 let socket = ref();
 let user = ref(randomString(8));
-let currentHash = hash;
+let currentHash = HASH;
+let currentWsOrigin = WS_ORIGIN;
 if (location.host === '127.0.0.1:5173') {
   currentHash = '10f3b500f2a4df8a0278c85954be9fcc';
+  // currentWsOrigin = 'ws://127.0.0.1:9000';
 }
 
 switch (mode) {
@@ -60,9 +63,13 @@ const handleResize = (delay = 0) => {
 };
 handleResize(1000);
 
-const connect = (url) => {
-  socket.value = new WebSocket(url);
+const connect = () => {
+  const key = md5(`${currentHash}@${room}@${user.value}`);
+  const wholeWsUrl = `${currentWsOrigin}?room=${room}&user=${user.value}&key=${key}`;
+
+  socket.value = new WebSocket(wholeWsUrl);
   socket.value.onclose = (e) => {
+    console.log(`socket断开连接: ${e.code} - ${e.reason}`);
     switch (e.reason) {
       case 'duplicate':
         ElNotification({
@@ -75,7 +82,7 @@ const connect = (url) => {
       default:
         ElNotification({
           title: '错误',
-          message: '连接已断开，请刷新重试！',
+          message: `${e.code} - ${e.reason} -  连接已断开，请刷新重试！`,
           type: 'error',
           duration: 0,
         });
@@ -83,6 +90,31 @@ const connect = (url) => {
     }
   };
 };
+
+network(({ type }) => {
+  console.log(`网络变化: ${type}`);
+  if (type === 'online') {
+    ElNotification({
+      title: '重连',
+      message: `网络恢复，重新建立连接...`,
+      type: 'success',
+    });
+    // connect();
+  }
+
+  if (type === 'offline') {
+    ElNotification({
+      title: '错误',
+      message: `网络断开`,
+      type: 'warning',
+    });
+    // connect();
+  }
+});
+
+// setTimeout(() => {
+//   socket.value?.close();
+// }, 6000);
 
 ElMessageBox.prompt('请输入昵称', {
   showCancelButton: false,
@@ -100,10 +132,7 @@ ElMessageBox.prompt('请输入昵称', {
   .catch(() => {})
   .finally(() => {
     localStorage.setItem('meet.user', user.value);
-    const key = md5(`${currentHash}@${room}@${user.value}`);
-
-    const wholeWsUrl = `${wsUrl}?room=${room}&user=${user.value}&key=${key}`;
-    connect(wholeWsUrl);
+    connect();
   });
 
 onUnmounted(cancelInitViewPort);
