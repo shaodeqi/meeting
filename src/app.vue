@@ -77,7 +77,7 @@ const handleResize = (delay = 0) => {
 handleResize(1000);
 
 const resetConnectState = () => {
-  console.log(socket.value?.readyState);
+  console.log(`readyState: ${socket.value?.readyState}`);
   connectState.value = socket.value?.readyState ?? WebSocket.CLOSED;
 };
 const connect = () => {
@@ -89,14 +89,14 @@ const connect = () => {
   resetConnectState();
 
   window.socket = socket.value;
-  socket.value.addEventListener('close', (e) => {
-    console.log(`socket断开连接: ${e.code} - ${e.reason}`);
+  socket.value.addEventListener('close', ({ code, reason }) => {
+    console.log(`socket断开连接: ${code} - ${reason}`);
     resetConnectState();
-    switch (e.reason) {
-      case 'duplicate':
+    switch (code) {
+      case 10006:
         ElNotification({
           title: '错误',
-          message: '昵称被占用，请刷新重试！',
+          message: '连接断开，请刷新重试！',
           type: 'error',
           duration: 0,
         });
