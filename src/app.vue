@@ -86,6 +86,7 @@ const connect = () => {
           type: 'error',
           duration: 0,
         });
+        connect();
         break;
     }
   };
