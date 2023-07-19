@@ -51,9 +51,6 @@ watch(socket, (socket) => {
                 dialogs.value = payload.data.history;
               }
               hasHistory = true;
-              setTimeout(() => {
-                hasHistory = false;
-              }, 10000);
               break;
           }
 
@@ -80,6 +77,7 @@ watch(socket, (socket) => {
   // 请求历史消息
   socket.addEventListener('open', () => {
     console.log(`建立连接`);
+    hasHistory = false;
     post('send', {
       type: 'history.pull',
     });
