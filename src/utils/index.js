@@ -2,11 +2,6 @@ export * from './constants';
 export * from './string';
 
 export const notify = (title, body) => {
-  console.log(
-    `Notification支持: ${'Notification' in globalThis}, ${
-      Notification?.permission || '-'
-    }`
-  );
   if (!('Notification' in globalThis)) {
     return;
   }
