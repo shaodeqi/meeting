@@ -9,7 +9,7 @@ let room = inject('room');
 
 const users = ref([]);
 const messageContainer = ref(null);
-let hasDialogsHistory = false;
+let readyReceiveDialogs = false;
 let justClosedUser = '';
 
 watch(socket, (socket) => {
@@ -61,10 +61,10 @@ watch(socket, (socket) => {
 
             // 更新消息历史(仅获取一次)
             case 'history.push':
-              if (!hasDialogsHistory) {
+              if (readyReceiveDialogs) {
                 dialogs.value = payload.data.history;
               }
-              hasDialogsHistory = true;
+              readyReceiveDialogs = false;
               break;
           }
 
@@ -90,7 +90,7 @@ watch(socket, (socket) => {
 
   // 请求历史消息
   socket.addEventListener('open', () => {
-    hasDialogsHistory = false;
+    readyReceiveDialogs = true;
     post('send', {
       type: 'history.pull',
     });
