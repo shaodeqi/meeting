@@ -1,11 +1,17 @@
 <script setup>
-import { ref, provide, onUnmounted } from 'vue';
+import { ref, provide, onUnmounted, computed } from 'vue';
 import { Splitpanes, Pane } from 'splitpanes';
 import md5 from 'blueimp-md5';
 
 import { ElMessageBox, ElNotification } from 'element-plus';
 
-import { WS_ORIGIN, HASH, randomString, initViewport } from '@/utils';
+import {
+  WS_ORIGIN,
+  HASH,
+  NETWORK_STATUS,
+  randomString,
+  initViewport,
+} from '@/utils';
 import network from '@/compositions/network';
 import ChatBlock from '@/components/chat-block.vue';
 
@@ -17,8 +23,15 @@ const mode = searchParams.get('mode');
 const chatSize = ref(20);
 let socket = ref();
 let user = ref(randomString(8));
+let online = ref(navigator.onLine);
+let connectState = ref(WebSocket.CLOSED);
 let currentHash = HASH;
 let currentWsOrigin = WS_ORIGIN;
+
+const networkState = computed(() =>
+  online.value ? connectState.value : WebSocket.CLOSED
+);
+
 if (location.host === '127.0.0.1:5173') {
   currentHash = '10f3b500f2a4df8a0278c85954be9fcc';
   // currentWsOrigin = 'ws://127.0.0.1:9000';
@@ -63,14 +76,22 @@ const handleResize = (delay = 0) => {
 };
 handleResize(1000);
 
+const resetConnectState = () => {
+  console.log(socket.value?.readyState);
+  connectState.value = socket.value?.readyState ?? WebSocket.CLOSED;
+};
 const connect = () => {
   const key = md5(`${currentHash}@${room}@${user.value}`);
   const wholeWsUrl = `${currentWsOrigin}?room=${room}&user=${user.value}&key=${key}`;
-
   socket.value?.close();
   socket.value = new WebSocket(wholeWsUrl);
-  socket.value.onclose = (e) => {
+
+  resetConnectState();
+
+  window.socket = socket.value;
+  socket.value.addEventListener('close', (e) => {
     console.log(`socket断开连接: ${e.code} - ${e.reason}`);
+    resetConnectState();
     switch (e.reason) {
       case 'duplicate':
         ElNotification({
@@ -81,41 +102,22 @@ const connect = () => {
         });
         break;
       default:
-        ElNotification({
-          title: '错误',
-          message: `${e.code} - ${e.reason} -  连接已断开，请刷新重试！`,
-          type: 'error',
-          duration: 0,
-        });
-        // connect();
         break;
     }
-  };
+    resetConnectState();
+  });
+  socket.value.addEventListener('open', () => {
+    resetConnectState();
+  });
 };
 
 network(({ type }) => {
-  console.log(`网络变化: ${type}`);
+  online.value = navigator.onLine;
+
   if (type === 'online') {
     connect();
-    ElNotification({
-      title: '重连',
-      message: `网络恢复，重新建立连接...`,
-      type: 'success',
-    });
-  }
-
-  if (type === 'offline') {
-    ElNotification({
-      title: '错误',
-      message: `网络断开`,
-      type: 'warning',
-    });
   }
 });
-
-// setTimeout(() => {
-//   socket.value?.close();
-// }, 6000);
 
 ElMessageBox.prompt('请输入昵称', {
   showCancelButton: false,
@@ -188,6 +190,20 @@ onUnmounted(cancelInitViewPort);
       <ChatBlock />
     </Pane>
   </Splitpanes>
+  <div
+    class="network-status"
+    :class="NETWORK_STATUS[networkState]"
+    :title="NETWORK_STATUS[networkState]"
+  >
+    <svg width="14" height="14" fill="currentColor" viewBox="0 0 16 16">
+      <path
+        d="M15.384 6.115a.485.485 0 0 0-.047-.736A12.444 12.444 0 0 0 8 3C5.259 3 2.723 3.882.663 5.379a.485.485 0 0 0-.048.736.518.518 0 0 0 .668.05A11.448 11.448 0 0 1 8 4c2.507 0 4.827.802 6.716 2.164.205.148.49.13.668-.049z"
+      />
+      <path
+        d="M13.229 8.271a.482.482 0 0 0-.063-.745A9.455 9.455 0 0 0 8 6c-1.905 0-3.68.56-5.166 1.526a.48.48 0 0 0-.063.745.525.525 0 0 0 .652.065A8.46 8.46 0 0 1 8 7a8.46 8.46 0 0 1 4.576 1.336c.206.132.48.108.653-.065zm-2.183 2.183c.226-.226.185-.605-.1-.75A6.473 6.473 0 0 0 8 9c-1.06 0-2.062.254-2.946.704-.285.145-.326.524-.1.75l.015.015c.16.16.407.19.611.09A5.478 5.478 0 0 1 8 10c.868 0 1.69.201 2.42.56.203.1.45.07.61-.091l.016-.015zM9.06 12.44c.196-.196.198-.52-.04-.66A1.99 1.99 0 0 0 8 11.5a1.99 1.99 0 0 0-1.02.28c-.238.14-.236.464-.04.66l.706.706a.5.5 0 0 0 .707 0l.707-.707z"
+      />
+    </svg>
+  </div>
 </template>
 <style scoped lang="less">
 .split-panes {
@@ -239,6 +255,37 @@ onUnmounted(cancelInitViewPort);
         margin-left: -32px;
       }
     }
+  }
+}
+.network-status {
+  margin: 4px 3px;
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  &.online {
+    color: #67c23a;
+  }
+  &.offline {
+    color: #f56c6c;
+    &::after {
+      content: '╲';
+      position: absolute;
+      left: 0;
+      bottom: 0;
+    }
+  }
+  &.connecting {
+    color: #409eff;
+    animation: opacity-change 1s alternate infinite;
+  }
+}
+
+@keyframes opacity-change {
+  0% {
+    opacity: 0.2;
+  }
+  100% {
+    opacity: 1;
   }
 }
 </style>

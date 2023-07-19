@@ -16,7 +16,7 @@ watch(socket, (socket) => {
     return;
   }
 
-  socket.onmessage = async ({ data }) => {
+  socket.addEventListener('message', async ({ data }) => {
     let payloadStr = data;
     if (type(data) === 'Blob') {
       payloadStr = await data.text();
@@ -72,15 +72,15 @@ watch(socket, (socket) => {
         messageContainer.value.scrollTop = messageContainer.value.scrollHeight; // 滚动高度
       }
     });
-  };
+  });
 
   // 请求历史消息
-  socket.onopen = () => {
+  socket.addEventListener('open', () => {
     console.log(`建立连接`);
     post('send', {
       type: 'history.pull',
     });
-  };
+  });
 });
 
 const post = (cmd, data, users) => {
