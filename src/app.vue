@@ -24,7 +24,7 @@ let currentHash = HASH;
 let currentWsOrigin = WS_ORIGIN;
 
 const networkState = computed(() =>
-  online.value ? connectState.value : ReconnectingWebSocket.CLOSED
+  online.value ? connectState.value : ReconnectingWebSocket.CLOSED,
 );
 
 if (location.host === '127.0.0.1:5173') {
@@ -80,14 +80,16 @@ const connect = () => {
   const key = md5(`${currentHash}@${room}@${user.value}`);
   const wholeWsUrl = `${currentWsOrigin}?room=${room}&user=${user.value}&key=${key}`;
   socket.value?.close();
-  socket.value = new ReconnectingWebSocket(wholeWsUrl);
+  socket.value = new ReconnectingWebSocket(wholeWsUrl, {
+    maxReconnectAttempts: 3,
+  });
 
   resetConnectState();
 
   window.socket = socket.value;
   socket.value.addEventListener('close', ({ code, reason }) => {
     console.log(
-      `socket断开连接: ${code} - ${reason} - ${new Date().toLocaleTimeString()}`
+      `socket断开连接: ${code} - ${reason} - ${new Date().toLocaleTimeString()}`,
     );
     // switch (+code) {
     //   case 1006:
@@ -248,7 +250,7 @@ ElMessageBox.prompt('请输入昵称', {
   }
 }
 .network-status {
-  margin: 4px 3px;
+  margin: 16px 3px;
   position: absolute;
   left: 0;
   bottom: 0;
