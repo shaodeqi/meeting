@@ -101,6 +101,7 @@ const connect = () => {
     resetConnectState();
   });
   socket.value.addEventListener('open', () => {
+    console.log('建立连接');
     resetConnectState();
   });
 };
