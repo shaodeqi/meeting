@@ -93,7 +93,7 @@ const connect = () => {
     console.log(`socket断开连接: ${code} - ${reason}`);
     resetConnectState();
     switch (+code) {
-      case 10006:
+      case 1006:
         ElNotification({
           title: '错误',
           message: '连接断开，请刷新重试！',
