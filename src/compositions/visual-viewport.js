@@ -1,4 +1,6 @@
-export const initViewport = () => {
+import { onUnmounted } from 'vue';
+
+export const visualViewport = () => {
   const handler = () => {
     document.documentElement.style.height = `${globalThis.visualViewport.height}px`;
     if (document.documentElement.scrollTop > 0) {
@@ -15,4 +17,8 @@ export const initViewport = () => {
     globalThis.visualViewport.removeEventListener('resize', handler);
     globalThis.visualViewport.removeEventListener('scroll', handler);
   };
+};
+
+export default () => {
+  onUnmounted(visualViewport());
 };

@@ -1,21 +1,16 @@
 <script setup>
-import { ref, provide, onUnmounted, computed } from 'vue';
+import { ref, provide, computed } from 'vue';
 import { Splitpanes, Pane } from 'splitpanes';
 import md5 from 'blueimp-md5';
-
 import { ElMessageBox, ElNotification } from 'element-plus';
+import ReconnectingWebSocket from 'reconnecting-websocket';
 
-import {
-  WS_ORIGIN,
-  HASH,
-  NETWORK_STATUS,
-  randomString,
-  initViewport,
-} from '@/utils';
+import { WS_ORIGIN, HASH, NETWORK_STATUS, randomString } from '@/utils';
 import network from '@/compositions/network';
+import listenVisualViewport from '@/compositions/visual-viewport';
 import ChatBlock from '@/components/chat-block.vue';
 
-const cancelInitViewPort = initViewport();
+listenVisualViewport();
 
 const searchParams = new URLSearchParams(location.search);
 const room = searchParams.get('room');
@@ -24,12 +19,12 @@ const chatSize = ref(20);
 let socket = ref();
 let user = ref(randomString(8));
 let online = ref(navigator.onLine);
-let connectState = ref(WebSocket.CLOSED);
+let connectState = ref(ReconnectingWebSocket.CLOSED);
 let currentHash = HASH;
 let currentWsOrigin = WS_ORIGIN;
 
 const networkState = computed(() =>
-  online.value ? connectState.value : WebSocket.CLOSED
+  online.value ? connectState.value : ReconnectingWebSocket.CLOSED
 );
 
 if (location.host === '127.0.0.1:5173') {
@@ -78,14 +73,14 @@ handleResize(1000);
 
 const resetConnectState = () => {
   console.log(`readyState: ${socket.value?.readyState}`);
-  connectState.value = socket.value?.readyState ?? WebSocket.CLOSED;
+  connectState.value = socket.value?.readyState ?? ReconnectingWebSocket.CLOSED;
 };
 
 const connect = () => {
   const key = md5(`${currentHash}@${room}@${user.value}`);
   const wholeWsUrl = `${currentWsOrigin}?room=${room}&user=${user.value}&key=${key}`;
   socket.value?.close();
-  socket.value = new WebSocket(wholeWsUrl);
+  socket.value = new ReconnectingWebSocket(wholeWsUrl);
 
   resetConnectState();
 
@@ -112,7 +107,7 @@ network(({ type }) => {
   online.value = navigator.onLine;
 
   if (type === 'online') {
-    connect();
+    // connect();
   }
 });
 
@@ -134,8 +129,6 @@ ElMessageBox.prompt('请输入昵称', {
     localStorage.setItem('meet.user', user.value);
     connect();
   });
-
-onUnmounted(cancelInitViewPort);
 
 // 展示聊天框
 // const showChat = ref(true);

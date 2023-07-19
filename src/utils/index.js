@@ -1,7 +1,5 @@
 export * from './constants';
-export * from './network';
 export * from './string';
-export * from './visual-viewport';
 
 export const notify = (title, body) => {
   console.log(
