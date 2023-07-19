@@ -86,7 +86,7 @@ const connect = () => {
           type: 'error',
           duration: 0,
         });
-        connect();
+        // connect();
         break;
     }
   };
@@ -109,7 +109,7 @@ network(({ type }) => {
       message: `网络断开`,
       type: 'warning',
     });
-    // connect();
+    connect();
   }
 });
 
