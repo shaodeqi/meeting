@@ -67,6 +67,7 @@ const connect = () => {
   const key = md5(`${currentHash}@${room}@${user.value}`);
   const wholeWsUrl = `${currentWsOrigin}?room=${room}&user=${user.value}&key=${key}`;
 
+  socket.value?.close();
   socket.value = new WebSocket(wholeWsUrl);
   socket.value.onclose = (e) => {
     console.log(`socket断开连接: ${e.code} - ${e.reason}`);
@@ -95,12 +96,12 @@ const connect = () => {
 network(({ type }) => {
   console.log(`网络变化: ${type}`);
   if (type === 'online') {
+    connect();
     ElNotification({
       title: '重连',
       message: `网络恢复，重新建立连接...`,
       type: 'success',
     });
-    connect();
   }
 
   if (type === 'offline') {
