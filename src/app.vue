@@ -29,7 +29,7 @@ const networkState = computed(() =>
 
 if (location.host === '127.0.0.1:5173') {
   currentHash = '10f3b500f2a4df8a0278c85954be9fcc';
-  currentWsOrigin = 'ws://127.0.0.1:9000';
+  // currentWsOrigin = 'ws://127.0.0.1:9000';
 }
 
 switch (mode) {
@@ -113,8 +113,8 @@ const connect = () => {
     console.log(
       `socket断开连接: ${code} - ${reason} - ${new Date().toLocaleTimeString()}`,
     );
-    switch (code) {
-      case 4000:
+    switch (reason) {
+      case 'duplicate':
         socket.value?.close();
         ElNotification({
           type: 'error',

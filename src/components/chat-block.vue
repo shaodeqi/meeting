@@ -1,5 +1,5 @@
 <script setup>
-import { ref, inject, nextTick, watch, watchEffect } from 'vue';
+import { ref, inject, nextTick, watch } from 'vue';
 import { Splitpanes, Pane } from 'splitpanes';
 import { type, notify, CLOSE_COOLING_MS } from '@/utils';
 
