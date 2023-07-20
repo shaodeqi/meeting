@@ -8,6 +8,7 @@ let user = inject('user');
 let room = inject('room');
 
 const users = ref([]);
+const dialogs = ref([]);
 const messageContainer = ref(null);
 let readyReceiveDialogs = false;
 let justClosedUser = '';
@@ -31,11 +32,51 @@ watch(
         console.error(e);
       }
       switch (payload.cmd) {
+        case 'send':
+          switch (payload.data?.type) {
+            // 消息提醒
+            case 'message.text':
+              if (payload.user !== user.value) {
+                notify(room, payload.data.content);
+              }
+              dialogs.value.push({
+                ...payload.data,
+                timestamp: payload.timestamp,
+                user: payload.user,
+              });
+              break;
+
+            // 需要消息历史
+            case 'history.pull':
+              post('send', {
+                type: 'history.push',
+                content: dialogs.value,
+              });
+              break;
+
+            // 更新消息历史(仅获取一次)
+            case 'history.push':
+              if (readyReceiveDialogs) {
+                dialogs.value = payload.data.content;
+              }
+              readyReceiveDialogs = false;
+              break;
+
+            case 'command.reload':
+              location.reload();
+              break;
+          }
+
+          break;
+
         case 'connect':
           if (justClosedUser && justClosedUser === payload.user) {
             dialogs.value.pop();
           } else {
-            dialogs.value.push(payload);
+            dialogs.value.push({
+              type: payload.cmd,
+              user: payload.user,
+            });
           }
           post('users');
           break;
@@ -46,43 +87,13 @@ watch(
             justClosedUser = '';
           }, CLOSE_COOLING_MS);
 
-          dialogs.value.push(payload);
+          dialogs.value.push({
+            type: payload.cmd,
+            user: payload.user,
+          });
           post('users');
           break;
 
-        case 'send':
-          if (payload.data.type) {
-            switch (payload.data.type) {
-              // 需要消息历史
-              case 'history.pull':
-                post('send', {
-                  type: 'history.push',
-                  history: dialogs.value,
-                });
-                break;
-
-              // 更新消息历史(仅获取一次)
-              case 'history.push':
-                if (readyReceiveDialogs) {
-                  dialogs.value = payload.data.history;
-                }
-                readyReceiveDialogs = false;
-                break;
-
-              case 'command.reload':
-                location.reload();
-                break;
-            }
-
-            break;
-          }
-
-          // 消息提醒
-          if (payload.user !== user.value) {
-            notify(room, payload.data);
-          }
-          dialogs.value.push(payload);
-          break;
         case 'users':
           users.value = payload.data;
           break;
@@ -98,8 +109,10 @@ watch(
     // 请求历史消息
     socket.addEventListener('open', () => {
       readyReceiveDialogs = true;
-      post('send', {
-        type: 'history.pull',
+      nextTick(() => {
+        post('send', {
+          type: 'history.pull',
+        });
       });
     });
   },
@@ -128,13 +141,18 @@ const handleEnter = (e) => {
   }
   const { shiftKey, ctrlKey, altKey } = e;
   if (!shiftKey && !ctrlKey && !altKey) {
-    post('send', message.value, []);
+    post(
+      'send',
+      {
+        type: 'message.text',
+        content: message.value,
+      },
+      [],
+    );
     message.value = '';
     e.preventDefault();
   }
 };
-
-const dialogs = ref([]);
 </script>
 
 <template>
@@ -147,7 +165,7 @@ const dialogs = ref([]);
         <div ref="messageContainer" class="chat-messages-container">
           <div v-for="(dialog, mIndex) in dialogs" :key="`dialog-${mIndex}`">
             <div
-              v-if="dialog.cmd === 'send'"
+              v-if="dialog.type === 'message.text'"
               class="dialog-item"
               :class="{ self: dialog.user === user }"
             >
@@ -159,17 +177,17 @@ const dialogs = ref([]);
               </div>
               <div class="dialog-message">
                 <div></div>
-                <div>{{ dialog.data }}</div>
+                <div>{{ dialog.content }}</div>
               </div>
             </div>
             <div
-              v-if="dialog.cmd === 'connect'"
+              v-if="dialog.type === 'connect'"
               class="text-grey text-center f-12"
             >
               {{ dialog.user }} 进入房间
             </div>
             <div
-              v-if="dialog.cmd === 'close'"
+              v-if="dialog.type === 'close'"
               class="text-grey text-center f-12"
             >
               {{ dialog.user }} 离开房间

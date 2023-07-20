@@ -69,12 +69,12 @@ const promptNick = () => {
     .then(({ value }) => {
       if (value) {
         user.value = value;
+        localStorage.setItem('meet.user', user.value);
+        sessionStorage.setItem('meet.user', user.value);
       }
     })
     .catch(() => {})
     .finally(() => {
-      localStorage.setItem('meet.user', user.value);
-      sessionStorage.setItem('meet.user', user.value);
       connect();
     });
 };
