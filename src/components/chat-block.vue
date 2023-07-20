@@ -1,5 +1,5 @@
 <script setup>
-import { ref, inject, nextTick, watch } from 'vue';
+import { ref, inject, nextTick, watch, watchEffect } from 'vue';
 import { Splitpanes, Pane } from 'splitpanes';
 import { type, notify, CLOSE_COOLING_MS } from '@/utils';
 
@@ -12,90 +12,101 @@ const messageContainer = ref(null);
 let readyReceiveDialogs = false;
 let justClosedUser = '';
 
-watch(socket, (socket) => {
-  if (!socket) {
-    return;
-  }
+watch(
+  socket,
+  (socket) => {
+    if (!socket) {
+      return;
+    }
 
-  socket.addEventListener('message', async ({ data }) => {
-    let payloadStr = data;
-    if (type(data) === 'Blob') {
-      payloadStr = await data.text();
-    }
-    let payload = {};
-    try {
-      payload = JSON.parse(payloadStr);
-    } catch (e) {
-      console.error(e);
-    }
-    switch (payload.cmd) {
-      case 'connect':
-        if (justClosedUser && justClosedUser === payload.user) {
-          dialogs.value.pop();
-        } else {
+    socket.addEventListener('message', async ({ data }) => {
+      let payloadStr = data;
+      if (type(data) === 'Blob') {
+        payloadStr = await data.text();
+      }
+      let payload = {};
+      try {
+        payload = JSON.parse(payloadStr);
+      } catch (e) {
+        console.error(e);
+      }
+      switch (payload.cmd) {
+        case 'connect':
+          if (justClosedUser && justClosedUser === payload.user) {
+            dialogs.value.pop();
+          } else {
+            dialogs.value.push(payload);
+          }
+          post('users');
+          break;
+
+        case 'close':
+          justClosedUser = payload.user;
+          setTimeout(() => {
+            justClosedUser = '';
+          }, CLOSE_COOLING_MS);
+
           dialogs.value.push(payload);
-        }
-        post('users');
-        break;
+          post('users');
+          break;
 
-      case 'close':
-        justClosedUser = payload.user;
-        setTimeout(() => {
-          justClosedUser = '';
-        }, CLOSE_COOLING_MS);
+        case 'send':
+          if (payload.data.type) {
+            switch (payload.data.type) {
+              // 需要消息历史
+              case 'history.pull':
+                post('send', {
+                  type: 'history.push',
+                  history: dialogs.value,
+                });
+                break;
 
-        dialogs.value.push(payload);
-        post('users');
-        break;
+              // 更新消息历史(仅获取一次)
+              case 'history.push':
+                if (readyReceiveDialogs) {
+                  dialogs.value = payload.data.history;
+                }
+                readyReceiveDialogs = false;
+                break;
 
-      case 'send':
-        if (payload.data.type) {
-          switch (payload.data.type) {
-            // 需要消息历史
-            case 'history.pull':
-              post('send', {
-                type: 'history.push',
-                history: dialogs.value,
-              });
-              break;
+              case 'command.reload':
+                location.reload();
+                break;
+            }
 
-            // 更新消息历史(仅获取一次)
-            case 'history.push':
-              if (readyReceiveDialogs) {
-                dialogs.value = payload.data.history;
-              }
-              readyReceiveDialogs = false;
-              break;
+            break;
           }
 
+          // 消息提醒
+          if (payload.user !== user.value) {
+            notify(room, payload.data);
+          }
+          dialogs.value.push(payload);
           break;
-        }
-
-        // 消息提醒
-        if (payload.user !== user.value) {
-          notify(room, payload.data);
-        }
-        dialogs.value.push(payload);
-        break;
-      case 'users':
-        users.value = payload.data;
-        break;
-    }
-    nextTick(() => {
-      if (messageContainer.value) {
-        messageContainer.value.scrollTop = messageContainer.value.scrollHeight; // 滚动高度
+        case 'users':
+          users.value = payload.data;
+          break;
       }
+      nextTick(() => {
+        if (messageContainer.value) {
+          messageContainer.value.scrollTop =
+            messageContainer.value.scrollHeight; // 滚动高度
+        }
+      });
     });
-  });
 
-  // 请求历史消息
-  socket.addEventListener('open', () => {
-    readyReceiveDialogs = true;
-    post('send', {
-      type: 'history.pull',
+    // 请求历史消息
+    socket.addEventListener('open', () => {
+      readyReceiveDialogs = true;
+      post('send', {
+        type: 'history.pull',
+      });
     });
-  });
-});
+  },
+  {
+    immediate: true,
+  },
+);
 
 const post = (cmd, data, users) => {
   if (!socket.value) {

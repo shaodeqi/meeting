@@ -17,7 +17,7 @@ const room = searchParams.get('room');
 const mode = searchParams.get('mode');
 const chatSize = ref(20);
 let socket = ref();
-let user = ref(randomString(8));
+let user = ref();
 let online = ref(navigator.onLine);
 let connectState = ref(ReconnectingWebSocket.CLOSED);
 let currentHash = HASH;
@@ -29,7 +29,7 @@ const networkState = computed(() =>
 
 if (location.host === '127.0.0.1:5173') {
   currentHash = '10f3b500f2a4df8a0278c85954be9fcc';
-  // currentWsOrigin = 'ws://127.0.0.1:9000';
+  currentWsOrigin = 'ws://127.0.0.1:9000';
 }
 
 switch (mode) {
@@ -57,6 +57,28 @@ provide('socket', socket);
 provide('room', room);
 provide('user', user);
 
+const promptNick = () => {
+  ElMessageBox.prompt('请输入昵称', {
+    showCancelButton: false,
+    confirmButtonText: '确定',
+    inputValue: localStorage.getItem('meet.user'),
+    customStyle: { transform: 'translate(0, -100%)' },
+    inputPattern: /^[\u4e00-\u9fa5a-zA-Z0-9_-]{1,30}$/,
+    inputErrorMessage: '昵称校验不通过',
+  })
+    .then(({ value }) => {
+      if (value) {
+        user.value = value;
+      }
+    })
+    .catch(() => {})
+    .finally(() => {
+      localStorage.setItem('meet.user', user.value);
+      sessionStorage.setItem('meet.user', user.value);
+      connect();
+    });
+};
+
 const handleResize = (delay = 0) => {
   setTimeout(() => {
     let panes = document.querySelectorAll('.pane-container');
@@ -77,61 +99,59 @@ const resetConnectState = () => {
 };
 
 const connect = () => {
+  if (!user.value) {
+    user.value = sessionStorage.getItem('meet.user') || randomString(8);
+  }
   const key = md5(`${currentHash}@${room}@${user.value}`);
   const wholeWsUrl = `${currentWsOrigin}?room=${room}&user=${user.value}&key=${key}`;
   socket.value?.close();
   socket.value = new ReconnectingWebSocket(wholeWsUrl, null, {
-    maxReconnectAttempts: 5,
+    maxRetries: 5,
   });
 
-  resetConnectState();
-
-  window.socket = socket.value;
   socket.value.addEventListener('close', ({ code, reason }) => {
     console.log(
       `socket断开连接: ${code} - ${reason} - ${new Date().toLocaleTimeString()}`,
     );
-    // switch (+code) {
-    //   case 1006:
-    //     // connect();
-    //     break;
-    //   default:
-    //     break;
-    // }
+    switch (code) {
+      case 4000:
+        socket.value?.close();
+        ElNotification({
+          type: 'error',
+          title: '错误',
+          message: '昵称重复，请重新输入！',
+          zIndex: 3000,
+        });
+        promptNick();
+        break;
+      default:
+        break;
+    }
     resetConnectState();
   });
   socket.value.addEventListener('open', () => {
     console.log('建立连接');
     resetConnectState();
   });
+  socket.value.addEventListener('error', function () {
+    resetConnectState();
+  });
+  resetConnectState();
+
+  if (new URLSearchParams(location.search).get('debug') !== null) {
+    globalThis.$socket = socket.value;
+  }
 };
 
-network(({ type }) => {
+network(() => {
   online.value = navigator.onLine;
-
-  if (type === 'online') {
-    // connect();
-  }
 });
 
-ElMessageBox.prompt('请输入昵称', {
-  showCancelButton: false,
-  confirmButtonText: '确定',
-  inputValue: localStorage.getItem('meet.user'),
-  customStyle: { transform: 'translate(0, -100%)' },
-  inputPattern: /^[\u4e00-\u9fa5a-zA-Z0-9_-]{1,30}$/,
-  inputErrorMessage: '昵称校验不通过',
-})
-  .then(({ value }) => {
-    if (value) {
-      user.value = value;
-    }
-  })
-  .catch(() => {})
-  .finally(() => {
-    localStorage.setItem('meet.user', user.value);
-    connect();
-  });
+if (sessionStorage.getItem('meet.user')) {
+  connect();
+} else {
+  promptNick();
+}
 
 // 展示聊天框
 // const showChat = ref(true);
@@ -251,7 +271,9 @@ ElMessageBox.prompt('请输入昵称', {
   }
 }
 .network-status {
-  margin: 16px 3px;
+  margin: 4px 3px;
+  margin-bottom: calc(constant(safe-area-inset-bottom) + 4px);
+  margin-bottom: calc(env(safe-area-inset-bottom) + 4px);
   position: absolute;
   left: 0;
   bottom: 0;
