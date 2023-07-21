@@ -13,9 +13,6 @@
   "[css]": {
     "editor.defaultFormatter": "vscode.css-language-features"
   },
-  "[less]": {
-    "editor.defaultFormatter": "vscode.css-language-features"
-  },
   "[vue]": {
     "editor.defaultFormatter": "dbaeumer.vscode-eslint"
   },

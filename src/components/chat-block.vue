@@ -36,7 +36,7 @@ watch(
           switch (payload.data?.type) {
             // 消息提醒
             case 'message.text':
-              if (payload.user !== user.value) {
+              if (document.hidden && payload.user !== user.value) {
                 notify(payload.data.content, room);
               }
               dialogs.value.push({
