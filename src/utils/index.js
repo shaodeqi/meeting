@@ -1,17 +1,26 @@
 export * from './constants';
 export * from './string';
 
-export const notify = (title, body) => {
+export const notify = (title, body = '') => {
   if (!('Notification' in globalThis)) {
     return;
   }
+  const _notify = () => {
+    new Notification(title, {
+      body,
+      icon: '/meeting.svg',
+    }).onclick = () => {
+      globalThis.focus();
+    };
+  };
 
   if (Notification.permission === 'granted') {
-    new Notification(title, { body });
+    _notify();
+    globalThis.focus();
   } else if (Notification.permission !== 'denied') {
     Notification.requestPermission().then((permission) => {
       if (permission === 'granted') {
-        new Notification(title, { body });
+        _notify();
       }
     });
   }

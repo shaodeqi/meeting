@@ -37,7 +37,7 @@ watch(
             // 消息提醒
             case 'message.text':
               if (payload.user !== user.value) {
-                notify(room, payload.data.content);
+                notify(payload.data.content, room);
               }
               dialogs.value.push({
                 ...payload.data,
