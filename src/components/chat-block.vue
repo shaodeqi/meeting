@@ -73,10 +73,19 @@ watch(
           if (justClosedUser && justClosedUser === payload.user) {
             dialogs.value.pop();
           } else {
-            dialogs.value.push({
+            const dialog = {
               type: payload.cmd,
               user: payload.user,
-            });
+            };
+            let sameUserConnectAgain = false;
+            try {
+              sameUserConnectAgain =
+                JSON.stringify(dialogs.value[dialogs.value.length - 1]) ===
+                JSON.stringify(dialog);
+            } catch {}
+            if (!sameUserConnectAgain) {
+              dialogs.value.push(dialog);
+            }
           }
           post('users');
           break;
