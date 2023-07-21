@@ -8,6 +8,7 @@ export const notify = (title, body = '') => {
   const _notify = () => {
     new Notification(title, {
       body,
+      vibrate: true,
       icon: '/meeting.svg',
     }).onclick = () => {
       globalThis.focus();
