@@ -1,15 +1,17 @@
 <script setup>
 import { ref, inject, nextTick, watch } from 'vue';
 import { Splitpanes, Pane } from 'splitpanes';
-import { type, notify, CLOSE_COOLING_MS } from '@/utils';
+import { type, notify, CLOSE_COOLING_MS, handleMessageData } from '@/utils';
 
-let socket = inject('socket');
-let user = inject('user');
-let room = inject('room');
+const socket = inject('socket');
+const post = inject('post');
+const users = inject('users');
+const user = inject('user');
+const room = inject('room');
 
-const users = ref([]);
 const dialogs = ref([]);
 const messageContainer = ref(null);
+
 let readyReceiveDialogs = false;
 let justClosedUser = '';
 
@@ -21,16 +23,8 @@ watch(
     }
 
     socket.addEventListener('message', async ({ data }) => {
-      let payloadStr = data;
-      if (type(data) === 'Blob') {
-        payloadStr = await data.text();
-      }
-      let payload = {};
-      try {
-        payload = JSON.parse(payloadStr);
-      } catch (e) {
-        console.error(e);
-      }
+      const payload = await handleMessageData(data);
+
       switch (payload.cmd) {
         case 'send':
           switch (payload.data?.type) {
@@ -48,7 +42,7 @@ watch(
 
             // 需要消息历史
             case 'history.pull':
-              post('send', {
+              post({
                 type: 'history.push',
                 content: dialogs.value,
               });
@@ -87,7 +81,7 @@ watch(
               dialogs.value.push(dialog);
             }
           }
-          post('users');
+          post(undefined, undefined, 'users');
           break;
 
         case 'close':
@@ -100,11 +94,7 @@ watch(
             type: payload.cmd,
             user: payload.user,
           });
-          post('users');
-          break;
-
-        case 'users':
-          users.value = payload.data;
+          post(undefined, undefined, 'users');
           break;
       }
       nextTick(() => {
@@ -119,7 +109,7 @@ watch(
     socket.addEventListener('open', () => {
       readyReceiveDialogs = true;
       nextTick(() => {
-        post('send', {
+        post({
           type: 'history.pull',
         });
       });
@@ -130,19 +120,6 @@ watch(
   },
 );
 
-const post = (cmd, data, users) => {
-  if (!socket.value) {
-    return;
-  }
-  socket.value.send(
-    JSON.stringify({
-      users,
-      cmd,
-      data,
-    }),
-  );
-};
-
 const message = ref('');
 const handleEnter = (e) => {
   if (!message.value) {
@@ -151,7 +128,6 @@ const handleEnter = (e) => {
   const { shiftKey, ctrlKey, altKey } = e;
   if (!shiftKey && !ctrlKey && !altKey) {
     post(
-      'send',
       {
         type: 'message.text',
         content: message.value,

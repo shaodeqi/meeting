@@ -5,10 +5,18 @@ import md5 from 'blueimp-md5';
 import { ElMessageBox, ElNotification } from 'element-plus';
 import ReconnectingWebSocket from 'reconnecting-websocket';
 
-import { WS_ORIGIN, HASH, NETWORK_STATUS, randomString } from '@/utils';
+import {
+  WS_ORIGIN,
+  HASH,
+  NETWORK_STATUS,
+  randomString,
+  handleMessageData,
+} from '@/utils';
 import network from '@/compositions/network';
 import listenVisualViewport from '@/compositions/visual-viewport';
+import listenFullscreen from '@/compositions/fullscreen';
 import ChatBlock from '@/components/chat-block.vue';
+import VideoBlock from '@/components/video-block.vue';
 
 listenVisualViewport();
 
@@ -16,11 +24,30 @@ const searchParams = new URLSearchParams(location.search);
 const room = searchParams.get('room');
 const mode = searchParams.get('mode');
 const chatSize = ref(20);
-const fullscreen = ref(!!document.fullscreenElement);
 const socket = ref();
+const users = ref([]);
 const user = ref();
 const online = ref(navigator.onLine);
 const connectState = ref(ReconnectingWebSocket.CLOSED);
+const { isFullscreen, switchFullscreen } = listenFullscreen();
+const post = (data, users, cmd = 'send') => {
+  if (!socket.value) {
+    return;
+  }
+  socket.value.send(
+    JSON.stringify({
+      users,
+      cmd,
+      data,
+    }),
+  );
+};
+
+provide('socket', socket);
+provide('room', room);
+provide('user', user);
+provide('users', users);
+provide('post', post);
 
 let currentHash = HASH;
 let currentWsOrigin = WS_ORIGIN;
@@ -55,14 +82,12 @@ if (!room) {
   });
 }
 
-provide('socket', socket);
-provide('room', room);
-provide('user', user);
-
 const promptNick = () => {
   ElMessageBox.prompt('请输入昵称', {
     showCancelButton: false,
     confirmButtonText: '确定',
+    confirmButtonClass: '',
+    buttonSize: 'small',
     inputValue: localStorage.getItem('meet.user'),
     customStyle: { transform: 'translate(0, -100%)' },
     inputPattern: /^[\u4e00-\u9fa5a-zA-Z0-9_-]{1,30}$/,
@@ -79,16 +104,6 @@ const promptNick = () => {
     .finally(() => {
       connect();
     });
-};
-
-const handleFullscreen = () => {
-  const isFullscreen = !!document.fullscreenElement;
-  if (isFullscreen) {
-    document.exitFullscreen();
-  } else {
-    document.documentElement.requestFullscreen();
-  }
-  fullscreen.value = !isFullscreen;
 };
 
 const handleResize = (delay = 0) => {
@@ -148,6 +163,15 @@ const connect = () => {
   socket.value.addEventListener('error', function () {
     resetConnectState();
   });
+  socket.value.addEventListener('message', async ({ data }) => {
+    const payload = await handleMessageData(data);
+    switch (payload.cmd) {
+      case 'users':
+        users.value = payload.data;
+        break;
+    }
+  });
+
   resetConnectState();
 
   if (new URLSearchParams(location.search).get('debug') !== null) {
@@ -164,12 +188,6 @@ if (sessionStorage.getItem('meet.user')) {
 } else {
   promptNick();
 }
-
-// 展示聊天框
-// const showChat = ref(true);
-// const handleFolded = () => {
-//   showChat.value = !showChat.value;
-// };
 </script>
 
 <template>
@@ -194,9 +212,7 @@ if (sessionStorage.getItem('meet.user')) {
           />
         </svg>
       </div>
-      <div class="pane-content">
-        【屏幕共享】<span class="text-grey">能力建设中...</span>
-      </div>
+      <VideoBlock />
     </Pane>
     <Pane class="pane-container" :size="chatSize">
       <div class="pane-header">
@@ -229,9 +245,9 @@ if (sessionStorage.getItem('meet.user')) {
       />
     </svg>
   </div>
-  <div class="fullscreen-icon" @click="handleFullscreen">
+  <div class="fullscreen-icon" @click="switchFullscreen">
     <svg
-      v-if="fullscreen"
+      v-if="isFullscreen"
       width="16"
       height="16"
       fill="currentColor"

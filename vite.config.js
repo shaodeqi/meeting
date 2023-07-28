@@ -9,7 +9,12 @@ export default defineConfig({
   build: {
     outDir: 'docs',
   },
-  plugins: [vue(), element()],
+  plugins: [
+    vue(),
+    element({
+      useSource: true,
+    }),
+  ],
   resolve: {
     alias: {
       '@': resolve(dirname(fileURLToPath(import.meta.url)), 'src'),
@@ -17,12 +22,15 @@ export default defineConfig({
   },
   css: {
     preprocessorOptions: {
+      scss: {
+        additionalData: `@use "@/styles/element/index.scss" as *;`,
+      },
       less: {
         modifyVars: {
           // 用于全局导入，以避免需要单独导入每个样式文件。
           // reference:  避免重复引用
           hack: `true; @import (reference) "${resolve(
-            'src/styles/variables.less'
+            'src/styles/variables.less',
           )}";`,
         },
       },
