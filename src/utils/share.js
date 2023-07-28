@@ -1,7 +1,6 @@
 export class MultiRTCPeerConnection extends EventTarget {
-  constructor(peers, signaling) {
+  constructor(peers, Signaling) {
     this.peers = peers;
-    this.signaling = signaling;
     this.connections = [];
 
     peers.forEach((peer) => {
@@ -20,10 +19,18 @@ export class MultiRTCPeerConnection extends EventTarget {
       });
 
       connection.addEventListener('negotiationneeded', (event) => {
-        connection.createOffer();
+        const offer = connection.createOffer();
+        const signaling = new Signaling(peer);
+        signaling.send({
+          type: 'offer',
+          data: offer,
+        });
+        signaling.addEventListener('message', ({ type, data }) => {
+          switch(type) {
+            case 'offer'
+          }
+        });
       });
-
-      signaling.send;
     });
   }
 }
