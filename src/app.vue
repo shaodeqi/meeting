@@ -89,7 +89,6 @@ const promptNick = () => {
     confirmButtonClass: '',
     buttonSize: 'small',
     inputValue: localStorage.getItem('meet.user'),
-    customStyle: { transform: 'translate(0, -100%)' },
     inputPattern: /^[\u4e00-\u9fa5a-zA-Z0-9_-]{1,30}$/,
     inputErrorMessage: '昵称校验不通过',
   })
