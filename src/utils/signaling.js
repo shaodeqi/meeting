@@ -1,34 +1,45 @@
 import { handleMessageData } from '@/utils';
 const prefix = 'signaling';
 
+const tranfer = async (message) => {
+  const { data: originData } = message;
+  const payload = await handleMessageData(originData);
+  const { cmd, data = {}, user } = payload;
+  const { type, content } = data;
+
+  if (cmd !== 'send' || type !== prefix) {
+    return;
+  }
+
+  return { content, from: user };
+};
+
 export class Signaling extends EventTarget {
-  constructor(socket, user) {
+  constructor(socket) {
     super();
-    this.user = user;
     this.socket = socket;
 
-    this.socket.addEventListener('message', async ({ data }) => {
-      const payload = await handleMessageData(data);
-      if (
-        payload.cmd === 'send' &&
-        payload.data.type === `${prefix}.${this.user}`
-      ) {
-        const event = new CustomEvent('message', {
-          detail: { ...payload.data.content, from: payload.user },
-        });
-        this.dispatchEvent(event);
+    this.socket.addEventListener('message', async (message) => {
+      const detail = await tranfer(message);
+      if (!detail) {
+        return;
       }
+
+      const event = new CustomEvent('message', {
+        detail,
+      });
+      this.dispatchEvent(event);
     });
   }
-  send(content, toUser) {
+  send(content, peer) {
     this.socket.send(
       JSON.stringify({
         cmd: 'send',
         data: {
-          type: `${prefix}.${toUser}`,
+          type: prefix,
           content,
         },
-        users: toUser ? [toUser] : [],
+        users: peer ? [peer] : [],
       }),
     );
   }

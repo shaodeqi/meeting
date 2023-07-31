@@ -1,68 +1,50 @@
 <script setup>
 import { ref, inject, nextTick, watch, computed, reactive } from 'vue';
-import { type, Sharer, Receiver, Signaling, handleMessageData } from '@/utils';
+import { Signaling, MultiRTCPeerConnection } from '@/utils';
 import { ElButton } from 'element-plus';
 
 const socket = inject('socket');
-const post = inject('post');
 const user = inject('user');
 const users = inject('users');
 
 const share = reactive({
   isSharing: false,
-  sharer: null,
+  connection: null,
   stream: null,
 });
 
-const signaling = computed(() =>
-  socket.value ? new Signaling(socket.value, user.value) : null,
-);
+const stopShare = () => {
+  share.connection?.getSenders().forEach((sender) => {
+    share.connection.removeTrack(sender);
+  });
+  share.isSharing = false;
+};
+const listenStream = (stream) => {
+  stream.getTracks()[0].addEventListener('ended', () => {
+    stopShare();
+  });
+};
 
 watch(
-  socket,
-  (socket) => {
-    if (!socket) {
+  users,
+  async (users) => {
+    if (!users.length) {
+      return;
+    }
+    if (share.connection) {
       return;
     }
 
-    socket.addEventListener('message', async ({ data }) => {
-      const payload = await handleMessageData(data);
-      const { cmd, user } = payload;
-      switch (cmd) {
-        case 'send':
-          switch (payload.data?.type) {
-            // 消息提醒
-            case 'share.start':
-              const receiver = new Receiver(signaling.value);
-              receiver.onStream = (remoteStream) => {
-                share.stream = remoteStream;
-              };
-              await receiver.create();
-              break;
-            case 'share.check':
-              if (share.isSharing) {
-                nextTick(() => {
-                  share.sharer.join(user);
-                  post(
-                    {
-                      type: 'share.start',
-                    },
-                    [user],
-                  );
-                });
-              }
-              break;
-          }
-      }
-    });
+    share.connection = new MultiRTCPeerConnection(
+      users.filter((u) => u !== user.value),
+      new Signaling(socket.value),
+    );
 
-    // 请求历史消息
-    socket.addEventListener('open', () => {
-      nextTick(() => {
-        post({
-          type: 'share.check',
-        });
-      });
+    share.connection.addEventListener('track', ({ detail }) => {
+      stopShare();
+      const { streams } = detail;
+      [share.stream] = streams;
+      listenStream(share.stream);
     });
   },
   {
@@ -70,27 +52,20 @@ watch(
   },
 );
 
-const stopShare = () => {
-  share.sharer?.stop();
-  share.isSharing = false;
-};
-
 const handleShare = async () => {
-  // if (share.isSharing) {
-  //   stopShare();
-  //   return;
-  // }
+  if (share.isSharing) {
+    stopShare();
+    return;
+  }
+
   // 获取屏幕内容
   share.stream = await navigator.mediaDevices.getDisplayMedia();
-  share.sharer = await new Sharer(
-    share.stream,
-    users.value.filter((currentUser) => currentUser !== user.value),
-    signaling.value,
-  ).create();
-  // share.isSharing = true;
-  post({
-    type: 'share.start',
+  share.stream.getTracks().forEach((track) => {
+    share.connection.addTrack(track, share.stream);
   });
+  listenStream(share.stream);
+
+  share.isSharing = true;
 };
 </script>
 
