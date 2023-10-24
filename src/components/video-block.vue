@@ -239,12 +239,12 @@ const handleShare = async () => {
 };
 
 const sendData = () => {
-  const dataChannel =
-    share.value.connection?.connections[0].createDataChannel('test');
-  console.log(dataChannel);
-  setTimeout(() => {
-    // dataChannel.send('你好！');
-  }, 1000);
+  if (window.$dataChannel) {
+    window.$dataChannel.send('你好！');
+  } else {
+    window.$dataChannel =
+      share.value.connection?.connections[0].createDataChannel('test');
+  }
 };
 </script>
 
