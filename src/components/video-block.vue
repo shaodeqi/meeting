@@ -249,9 +249,6 @@ const sendData = () => {
 </script>
 
 <template>
-  <div class="peer-list">
-    {{ peers }}
-  </div>
   <div class="video-container">
     <video
       ref="videoELe"
@@ -270,7 +267,7 @@ const sendData = () => {
         @click="handleShare()"
         >{{ share.isSharing ? '停止共享' : '共享屏幕' }}</el-button
       >
-      <el-button @click="sendData">发送数据</el-button>
+      <!-- <el-button @click="sendData">发送数据</el-button> -->
       <el-dropdown
         v-if="audioInputDevices.length || audioOutputDevices.length"
         size="small"
