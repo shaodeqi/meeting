@@ -86,11 +86,7 @@ export class MultiRTCPeerConnection extends EventTarget {
     connection.peer = peer;
 
     const sendOffer = async (connection) => {
-      const offer = await connection.createOffer({
-        // offerToReceiveAudio: true,
-        // offerToReceiveVideo: true,
-        // iceRestart: true,
-      });
+      const offer = await connection.createOffer();
       connection.setLocalDescription(offer);
       signaling.send(
         {
