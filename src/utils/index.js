@@ -1,6 +1,6 @@
 export * from './constants';
 export * from './string';
-export * from './share';
+export * from './multi-rtc-peer-connection';
 export * from './signaling';
 // export * from './signaling';
 

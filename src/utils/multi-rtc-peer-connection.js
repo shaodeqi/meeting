@@ -4,6 +4,7 @@ export class MultiRTCPeerConnection extends EventTarget {
     this.peers = peers;
     this.connections = [];
     this.signaling = signaling;
+    globalThis.$connections = this.connections;
 
     this.listen();
 
@@ -36,11 +37,19 @@ export class MultiRTCPeerConnection extends EventTarget {
         switch (type) {
           case 'offer':
             console.log('收到offer', data);
-            connection.setRemoteDescription(data);
-            const answer = await connection.createAnswer();
-            signaling.send({ type: 'answer', data: answer }, from);
-            console.log('发送answer', answer);
-            connection.setLocalDescription(answer);
+            try {
+              connection.setRemoteDescription(data);
+              const answer = await connection.createAnswer();
+              signaling.send({ type: 'answer', data: answer }, from);
+              console.log('发送answer', answer);
+              connection.setLocalDescription(answer);
+            } catch (e) {
+              console.log(e);
+            }
+            const trackEvent = new CustomEvent('offer', {
+              detail: connection,
+            });
+            this.dispatchEvent(trackEvent);
             break;
 
           case 'answer':
@@ -105,10 +114,10 @@ export class MultiRTCPeerConnection extends EventTarget {
     });
     connection.addEventListener('connectionstatechange', async () => {
       if (connection.connectionState === 'connected') {
-        console.log('我的对等连接成功！', +new Date());
+        console.log(`与${connection.peer}对等连接成功！`);
       }
       if (connection.connectionState === 'disconnected') {
-        console.log('我的连接已断开！', +new Date());
+        console.log(`与${connection.peer}对等连接断开！`);
       }
     });
 
