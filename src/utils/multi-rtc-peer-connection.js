@@ -31,7 +31,7 @@ export class MultiRTCPeerConnection extends EventTarget {
 
         if (!connection) {
           console.log('未找到匹配的 connection, 重新创建');
-          connection = await join.call(this, from, true);
+          connection = await join.call(this, from);
         }
 
         switch (type) {
@@ -67,7 +67,7 @@ export class MultiRTCPeerConnection extends EventTarget {
     );
   }
 
-  async join(peer, passive = false) {
+  async join(peer) {
     const { signaling, connections } = this;
     const connection = new RTCPeerConnection({
       iceServers: [
@@ -124,9 +124,6 @@ export class MultiRTCPeerConnection extends EventTarget {
       this.dispatchEvent(trackEvent);
     });
 
-    if (!passive) {
-      sendOffer(connection);
-    }
 
     connections.push(connection);
     return connection;
